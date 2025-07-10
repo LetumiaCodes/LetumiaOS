@@ -1,0 +1,53 @@
+__asm__ volatile ("hlt"); //idk yet
+
+//multiboot support for qemu testing
+#include <stdint.h>
+
+extern "C" {
+__attribute__((section(".multiboot"), used))
+volatile const uint32_t multiboot_header[] = {
+    0x1BADB002,                    
+    0x00000000,                     
+    (uint32_t)-(0x1BADB002 + 0x0)   
+};
+}
+
+//make elf file
+x86_64-elf-gcc -ffreestanding -m32 -c kernel.cpp -o kernel.o
+x86_64-elf-ld -m elf_i386 -T link.ld -o kernel.elf kernel.o
+
+//boot kernel in qemu
+qemu-system-i386 -kernel <path>kernel.elf
+
+//Make link file with multiboot
+ENTRY(kernel_main)
+
+SECTIONS {
+  . = 1M;
+
+  .multiboot :
+  {
+    KEEP(*(.multiboot))
+  }
+
+  .text :
+  {
+    *(.text*)
+  }
+
+  .rodata :
+  {
+    *(.rodata*)
+  }
+
+  .data :
+  {
+    *(.data*)
+  }
+
+  .bss :
+  {
+    *(COMMON)
+    *(.bss*)
+  }
+}
