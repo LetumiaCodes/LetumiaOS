@@ -1,4 +1,4 @@
-__asm__ volatile ("hlt"); //idk yet
+__asm__ volatile ("hlt"); //Put in an idle loop
 
 //multiboot support for qemu testing
 #include <stdint.h>
