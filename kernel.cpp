@@ -9,18 +9,24 @@ volatile const uint32_t multiboot_header[] = {
 };
 }
 
+extern "C" void ClearScreen() {
+    volatile unsigned short* VGA = (unsigned short*)0xB8000;
+    for (int i = 0; i < 80 * 25; ++i) {
+        VGA[i] = 0x0720;
+    }
+}
+
 extern "C" void print(const char* str) {
     volatile char* VGA = (volatile char*)0xB8000;
-    int i = 0;
-
-    while (str[i] != '\n') {
+    for (int i = 0; str[i] != '\0'; ++i) {
         VGA[i * 2] = str[i];
         VGA[i * 2 + 1] = 0x07;
     }
 }
 
 extern "C" void kernel_main() {
-    print("Welcome to Cunix");
+    ClearScreen();
+    print("Welcome to NovaKernel v0.01");
 
     while(1) {}
 }
