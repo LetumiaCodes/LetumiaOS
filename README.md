@@ -1,6 +1,8 @@
 **NovaKernel_README**
 
 
+
+
 **Mission**
 
 NovaKernel is meant to be a simple and understandable so anyone can look at the code and understand to make OS development easier.
