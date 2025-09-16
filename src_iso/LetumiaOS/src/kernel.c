@@ -1,12 +1,25 @@
+//Headers + Custom headers
 #include <stdint.h>
 #include "letio.h"
 
+//VGA
 #define vgaWidth 80
 #define vgaHeight 25
 #define VGA_BUFFER ((volatile uint16_t*)0xB8000)
 
+//Keyboard
+#define PS2_DATA_PORT 0x60
+#define PS2_STATUS_PORT 0x64
+
+#define INPUT_BUF_SIZE 128
+char input[INPUT_BUF_SIZE];
+int input_pos = 0;
+
 extern void outb(uint16_t port, uint8_t val);
 extern uint8_t inb(uint16_t port);
+
+char scancode_to_ascii(uint8_t scancode);  // ← this line fixes the warning
+char get_key_blocking();
 
 //Multiboot
 __attribute__((section(".multiboot"), used))
@@ -33,12 +46,49 @@ void cursorUpdate(int x, int y) {
   outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
 
+
+char get_key_blocking() {
+    while (1) {
+        uint8_t status = inb(0x64);  
+        if (status & 1) {            
+            uint8_t scancode = inb(0x60);
+
+            if (!(scancode & 0x80)) {
+                return scancode_to_ascii(scancode);
+            }
+        }
+    }
+}
+
+
+char scancode_to_ascii(uint8_t scancode) {
+    static const char map[128] = {
+        0,  27, '1','2','3','4','5','6','7','8','9','0','-','=','\b',
+        '\t','q','w','e','r','t','y','u','i','o','p','[',']','\n', 0,
+        'a','s','d','f','g','h','j','k','l',';','\'','`', 0,'\\',
+        'z','x','c','v','b','n','m',',','.','/', 0,'*', 0,' ', // space
+    };
+
+    if (scancode < sizeof(map)) {
+        return map[scancode];
+    }
+    return 0;
+}
+
+
+int letstr(const char* a, const char* b) {
+    while (*a && *b) {
+        if (*a != *b) return 0;
+        a++;
+        b++;
+    }
+    return *a == *b;
+}
+
 //Main function... DUHHHHHHH
 void kernel_main() {
-  int x = 0;
-  int y = 7;
-
-  int num = 25;
+  int x = 6;
+  int y = 6;
   
   const char *bootMessage = "Welcome to Letumia OS V_0.05";
   const char *welcomeMessage = "Check github for more updates";
@@ -54,8 +104,56 @@ void kernel_main() {
   println(topBorder, 0, 2);
   println(warning, 0, 3);
   println(bottomBorder, 0, 4);
-  println(commandParse, 0, 6);
-  cursorUpdate(6, 6);
+  println(commandParse, 0, y);
+  cursorUpdate(x, y);
+
   
-  while(1) {}
+while (1) {
+    char c = get_key_blocking();
+
+    if (c == '\b') {
+        if (input_pos > 0) {
+            input_pos--;
+            x--;
+            println(" ", x, y);    
+            cursorUpdate(x, y);
+        }
+    } else if (c == '\n') {
+        input[input_pos] = '\0';  
+
+        if (letstr(input, "help")) {
+          y++;
+          println("Read the fucking manual you princess", 0, y);
+        } else if (letstr(input, "devs")) {
+          y++;
+          println("Devs: Letumia & madhav", 0, y);
+        } else {
+          y++;
+          println("Illegal command", 0, y);
+        }
+        
+        y++;
+        x = 6;
+        println(commandParse, 0, y);
+        cursorUpdate(x, y);
+
+        input_pos = 0;        
+    } else if (c && input_pos < INPUT_BUF_SIZE - 1) {
+        input[input_pos] = c;
+        input_pos++;
+
+        char s[2] = {c, '\0'};
+        println(s, x, y);
+        x++;
+        cursorUpdate(x, y);
+
+        if (x >= vgaWidth) {   
+            x = 6;
+            y++;
+            println(commandParse, 0, y);
+            cursorUpdate(x, y);
+        }
+      }
+    }
 }
+
