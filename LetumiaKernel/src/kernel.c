@@ -24,7 +24,7 @@ int input_pos = 0;
 extern void outb(uint16_t port, uint8_t val);
 extern uint8_t inb(uint16_t port);
 
-char scancode_to_ascii(uint8_t scancode);  // ← this line fixes the warning
+char scancode_to_ascii(uint8_t scancode); 
 
 char get_key_blocking() {
     while (1) {
@@ -32,15 +32,15 @@ char get_key_blocking() {
         if (status & 1) {
             uint8_t scancode = inb(0x60);
 
-            if (scancode == 0x2A || scancode == 0x36) {  // Left/Right Shift press
+            if (scancode == 0x2A || scancode == 0x36) {  
                 shift_pressed = true;
                 continue;
-            } else if (scancode == 0xAA || scancode == 0xB6) {  // Left/Right Shift release
+            } else if (scancode == 0xAA || scancode == 0xB6) {  
                 shift_pressed = false;
                 continue;
             }
 
-            if (!(scancode & 0x80)) {  // Key press
+            if (!(scancode & 0x80)) {  
                 return scancode_to_ascii(scancode);
             }
         }
